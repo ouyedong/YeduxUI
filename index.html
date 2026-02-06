@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yedux</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; img-src 'self' data: blob: https:;">
     
     <!-- 1. Resource Preconnect & DNS Prefetch -->
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
@@ -13,20 +14,72 @@
     <link rel="dns-prefetch" href="https://api.midjourney.com">
 
     <!-- 2. Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com" data-cfasync="false"></script>
     
     <!-- 3. React & ReactDOM (Defer loading) -->
-    <script defer crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script defer crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script defer crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js" data-cfasync="false"></script>
+    <script defer crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" data-cfasync="false"></script>
     
     <!-- 4. Babel (Defer loading) -->
-    <script defer src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script defer src="https://unpkg.com/@babel/standalone/babel.min.js" data-cfasync="false"></script>
     
     <!-- 5. Lucide Icons (Defer loading) -->
-    <script defer src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="https://unpkg.com/lucide@latest" data-cfasync="false"></script>
     
     <!-- 6. Marked (Defer loading) -->
-    <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" data-cfasync="false"></script>
+    <script>
+        (function () {
+            var deadline = Date.now() + 8000;
+            function showHelp() {
+                var container = document.querySelector('.art-loader-container');
+                if (!container) return;
+                var wrap = document.createElement('div');
+                wrap.style.marginTop = '16px';
+                wrap.style.fontSize = '12px';
+                wrap.style.color = '#f97316';
+                wrap.style.display = 'flex';
+                wrap.style.flexDirection = 'column';
+                wrap.style.alignItems = 'center';
+                var msg = document.createElement('div');
+                msg.textContent = '资源加载失败：请使用 http/https 打开，或关闭 Cloudflare Rocket Loader。';
+                var btn = document.createElement('button');
+                btn.textContent = '一键清空本地数据并重试';
+                btn.style.marginTop = '8px';
+                btn.style.padding = '6px 10px';
+                btn.style.borderRadius = '9999px';
+                btn.style.border = '1px solid rgba(249,115,22,0.5)';
+                btn.style.background = 'rgba(249,115,22,0.1)';
+                btn.style.color = '#fff';
+                btn.style.cursor = 'pointer';
+                btn.onclick = function () {
+                    try {
+                        var keys = [
+                            'tapnow_api_configs',
+                            'tapnow_history',
+                            'tapnow_chat_sessions',
+                            'tapnow_characters',
+                            'tapnow_saved_folder_history'
+                        ];
+                        keys.forEach(function(k){ localStorage.removeItem(k); });
+                    } catch (e) {}
+                    location.reload();
+                };
+                wrap.appendChild(msg);
+                wrap.appendChild(btn);
+                container.appendChild(wrap);
+            }
+            function check() {
+                var ok = !!window.React && !!window.ReactDOM && !!window.Babel && !!window.lucide;
+                if (!ok && Date.now() > deadline) {
+                    showHelp();
+                } else if (!ok) {
+                    setTimeout(check, 500);
+                }
+            }
+            setTimeout(check, 500);
+        })();
+    </script>
 
     <style>
         body { margin: 0; padding: 0; background-color: #09090b; }
@@ -338,7 +391,7 @@
         <div class="art-loader-container">
             <div class="art-center-group">
                 <div class="art-visual">
-                    <img src="../logo5.png" alt="Yedux Logo" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,102,0,0.4));" />
+                    <img src="./logo5.png" alt="Yedux Logo" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,102,0,0.4));" />
                 </div>
                 <div class="art-content">
                     <div class="art-title" style="color: #FF6600; text-shadow: 0 0 20px rgba(255,102,0,0.3);">Yedux</div>
@@ -350,7 +403,26 @@
         </div>
     </div>
 
-    <script type="text/babel" data-presets="env,react">
+    <script>
+        (function(){
+            var keysToCheck = [
+                'tapnow_api_configs',
+                'tapnow_history',
+                'tapnow_chat_sessions',
+                'tapnow_characters',
+                'tapnow_saved_folder_history'
+            ];
+            try {
+                keysToCheck.forEach(function(k){
+                    var s = localStorage.getItem(k);
+                    if (!s) return;
+                    try { JSON.parse(s); }
+                    catch (e) { localStorage.removeItem(k); }
+                });
+            } catch (e) {}
+        })();
+    </script>
+    <script type="text/babel" data-presets="env,react" data-cfasync="false">
         // 全局屏蔽滚轮事件相关的控制台错误（在 React 渲染之前设置）
         (function() {
             const originalError = console.error;
@@ -1375,7 +1447,8 @@
         const DEFAULT_BASE_URL = 'https://ai.comfly.chat';
         
         // 即梦API配置（代理地址，默认本地5100端口）
-        const JIMENG_API_BASE_URL = 'http://localhost:5100';
+        // 注意：静态部署时，本地服务不可用，需要配置为远程API或禁用
+        const JIMENG_API_BASE_URL = ''; // 静态部署时留空，用户需自行配置
         const JIMENG_SESSION_ID = '7a16459fbd65d9c87b4ea44d3318f5fa';
 
         const DEFAULT_API_CONFIGS = [
@@ -2249,8 +2322,9 @@ You must design a visual composition that tells the story through **8 distinct p
             });
             
             // 本地缓存服务器状态
+            // 注意：静态部署时，本地缓存服务不可用
             const [localCacheServerConnected, setLocalCacheServerConnected] = useState(false);
-            const localCacheServerUrl = 'http://127.0.0.1:9527';
+            const localCacheServerUrl = ''; // 静态部署时留空
             
             // 本地缓存服务器配置
             const [localServerConfig, setLocalServerConfig] = useState({
@@ -2387,6 +2461,11 @@ You must design a visual composition that tells the story through **8 distinct p
             // 检查本地缓存服务器连接状态并获取配置
             useEffect(() => {
                 const checkLocalCacheServer = async () => {
+                    // 静态部署时跳过本地服务器检查
+                    if (!localCacheServerUrl) {
+                        setLocalCacheServerConnected(false);
+                        return;
+                    }
                     try {
                         const res = await fetch(`${localCacheServerUrl}/ping`, { method: 'GET' });
                         if (res.ok) {
@@ -18977,7 +19056,7 @@ You must design a visual composition that tells the story through **8 distinct p
                     >
                         <div className="flex items-center gap-4">
                             <div className="w-11 h-11 rounded-md overflow-hidden flex items-center justify-center">
-                                <img src="../logo5.png" alt="Logo" className="w-full h-full object-contain" />
+                                <img src="./logo5.png" alt="Logo" className="w-full h-full object-contain" />
                             </div>
                             <span
                                 className={`font-bold text-base tracking-wide ${
